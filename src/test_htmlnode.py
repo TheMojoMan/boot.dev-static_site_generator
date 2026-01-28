@@ -1,10 +1,11 @@
 import unittest
 
-from htmlnode import HTMLNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 
 class TestHTMLNode(unittest.TestCase):
-    
+
+    # testing HTMLNode
     def test_init_with_all_parameters(self):
         """Test initialization with all parameters provided"""
         node = HTMLNode(
@@ -45,13 +46,13 @@ class TestHTMLNode(unittest.TestCase):
         node = HTMLNode(props={"href": "https://www.google.com", "target": "_blank"})
         result = node.props_to_html()
         # Note: dict order is preserved in Python 3.7+
-        self.assertEqual(result, ' href=https://www.google.com target=_blank')
+        self.assertEqual(result, ' href="https://www.google.com" target="_blank"')
     
     def test_props_to_html_with_single_prop(self):
         """Test props_to_html with single property"""
         node = HTMLNode(props={"class": "container"})
         result = node.props_to_html()
-        self.assertEqual(result, ' class=container')
+        self.assertEqual(result, ' class="container"')
     
     def test_props_to_html_with_none_props(self):
         """Test props_to_html returns empty string when props is None"""
@@ -99,12 +100,44 @@ class TestHTMLNode(unittest.TestCase):
         })
         result = node.props_to_html()
         # Check that all props are present
-        self.assertIn("id=main", result)
-        self.assertIn("class=wrapper", result)
-        self.assertIn("data-test=value", result)
+        self.assertIn('id="main"', result)
+        self.assertIn('class="wrapper"', result)
+        self.assertIn('data-test="value"', result)
         # Check that each starts with a space
         self.assertTrue(result.startswith(" "))
 
+    # testing LeafNode
+    def test_leaf_to_html_p(self):
+        node = LeafNode("p", "Hello, world!")
+        self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
 
+    def test_leaf_to_html_a(self):
+        node = LeafNode("a", "Click me!", {"href": "https://www.google.com"})
+        self.assertEqual(node.to_html(), '<a href="https://www.google.com">Click me!</a>')
+
+    def test_leaf_no_value(self):
+        node = LeafNode("p", None, None)
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+    def test_leaf_no_tag(self):
+        node = LeafNode("", "Click me!", {"href": "https://www.google.com"})
+        self.assertEqual(node.to_html(), 'Click me!')
+
+    # testing ParentNode
+    def test_parent_to_html_with_children(self):
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+            
+    def test_parent_to_html_with_grandchildren(self):
+        grandchild_node = LeafNode("b", "grandchild")
+        child_node = ParentNode("span", [grandchild_node])
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div><span><b>grandchild</b></span></div>",
+        )     
+           
 if __name__ == "__main__":
     unittest.main()
